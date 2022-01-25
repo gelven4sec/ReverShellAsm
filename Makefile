@@ -5,3 +5,6 @@ all:
 
 run:
 	./a.out
+nc:
+	nc -nvlp 8443
+

