@@ -3,9 +3,10 @@ global _start
 section .data
         wait_str db 10,"Wait 5 seconds...",0
         wait_str_len equ $ - wait_str
-	shell db "/bin/sh",0
-        ;ps1 db "PS1=test",0
-        ;envs dd ps1,0
+	shell db "/bin/bash",0
+        ps1 db 'PS1=fancy $ ',0
+        term db "TERM=xterm-color",0
+        envs dd ps1,term,0
 	arg1 db "-i",0
 	args dd shell,arg1,0
 
@@ -149,5 +150,5 @@ debug1:
         xor ecx, ecx
 	mov ecx, args
         xor edx, edx
-	;mov edx, envs ; edx = [ps1]
+	mov edx, envs ; edx = [ps1]
         int 0x80
